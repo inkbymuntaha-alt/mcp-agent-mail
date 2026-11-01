@@ -1,10 +1,9 @@
-import os
-import re
+import os, re
 from fastapi import FastAPI, Header, Query
 from fastapi.responses import JSONResponse
 import resend
 
-app = FastAPI(title="MCP Agent Mail Gateway")
+app = FastAPI(title="MCP Agent Mail")
 TX_HASH_REGEX = re.compile(r"^0x[a-fA-F0-9]{64}$")
 resend.api_key = os.getenv("RESEND_API_KEY", "re_dummy_key")
 
@@ -22,15 +21,19 @@ def get_manifest():
 async def send_agent_notification(
     payment_signature: str = Header(None, alias="PAYMENT-SIGNATURE"),
     recipient_email: str = Query(...),
-    subject: str = Query("Agent Task Complete"),
+    subject: str = Query("Agent Notification"),
     message: str = Query(...)
 ):
     if not payment_signature or not TX_HASH_REGEX.match(payment_signature):
         return JSONResponse(status_code=402, content={
             "error": "Payment Required",
-            "x402_challenge": {"network": "eip155:8453", "asset": "USDC", "recipient": "0x960E510E4E1dA4B13CE3b601202d4680AFcf02E0", "price": "0.02"}
+            "x402_challenge": {
+                "network": "eip155:8453",
+                "asset": "USDC",
+                "recipient": "0x960E510E4E1dA4B13CE3b601202d4680AFcf02E0",
+                "price": "0.02"
+            }
         })
-    
     try:
         r = resend.Emails.send({
             "from": "Agent Network <onboarding@resend.dev>",
